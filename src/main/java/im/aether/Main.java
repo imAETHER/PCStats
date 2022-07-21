@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.logging.Logger;
 
 /**
  * @author imAETHER
@@ -24,12 +25,12 @@ public class Main {
     public static final SystemInfo SYSTEM_INFO = new SystemInfo();
 
     public static void main(String[] args) throws Exception {
-        System.out.println("[INFO] Checking for config file...");
+        Logger.getGlobal().info("Checking for config file...");
 
         if (!CONFIG.exists()) {
-            if (CONFIG.createNewFile()) System.out.println("[INFO] Created config file.");
+            if (CONFIG.createNewFile()) Logger.getGlobal().info("Created config file.");
             else {
-                System.err.println("[ERROR] Failed to create config file. please create it and re-launch.");
+                Logger.getGlobal().severe("Failed to create config file. please create it and re-launch.");
                 return;
             }
         }
@@ -39,28 +40,28 @@ public class Main {
         final Config config = gson.fromJson(cfgData, Config.class);
 
         if (config == null) {
-            System.err.println("[ERROR] Failed to parse config file. Please check it and re-launch.");
-            System.err.println("[TIP] An example config can be found in the README.");
+            Logger.getGlobal().severe("Failed to parse config file. Please check it and re-launch.");
+            Logger.getGlobal().severe("An example config can be found in the README.");
             return;
         }
 
-        System.out.println("[INFO] Config loaded. Downloading libs...");
+        Logger.getGlobal().info("Config loaded. Downloading libs...");
 
         // temp(libs) and tempDir(lib directory), this is so Core doesn't create more temp dirs and just uses the given one
         final Pair<File, File> discordLib = DiscordRPC.downloadDiscordLibrary();
         if (discordLib == null) {
-            System.err.println("[ERROR] Failed to download discord library.");
+            Logger.getGlobal().severe("Failed to download discord library.");
         } else {
             Core.init(discordLib.getA(), discordLib.getB());
-            System.out.println("[INFO] Discord library loaded.");
+            Logger.getGlobal().info("Discord library loaded.");
         }
 
         boolean runningOhm = SYSTEM_INFO.getOperatingSystem().getProcesses().stream().anyMatch(
                 process -> process.getName().equalsIgnoreCase("openhardwaremonitor")
         );
         if (!runningOhm) {
-            System.out.println("[WARN] OpenHardwareMonitor isn't running, please run it & restart me");
-            System.out.println("[WARN] or you may get inaccurate readings. You can also try running me as admin.");
+            Logger.getGlobal().warning("OpenHardwareMonitor isn't running, please run it & restart me");
+            Logger.getGlobal().warning("or you may get inaccurate readings. You can also try running me as admin.");
         }
 
         DiscordRPC.initActivity(config.appId, config.showPCActiveTime);
@@ -96,7 +97,7 @@ public class Main {
             DiscordRPC.dispose();
         }));
 
-        System.out.println("[INFO] You can press CTRL+C to exit.");
+        Logger.getGlobal().info("You can press CTRL+C to exit.");
     }
 
     /**
