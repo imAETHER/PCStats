@@ -5,10 +5,7 @@ package im.aether;
  */
 public class Config {
 
-    public String appId = "";
-    public String smallImage = "";
-    public String largeImage = "";
-
-    public boolean showPCActiveTime;
+	public String appId, smallImage, largeImage;
+	public boolean showPCActiveTime;
 
 }
