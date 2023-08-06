@@ -1,17 +1,17 @@
-# <p align="center">PC Stats<br><img src="https://aetherclient.com/uploads/imf44/2a8cfc720a.png"></p>
+# <p align="center">PC Stats<br>![image](https://github.com/imAETHER/PCStats/assets/36291026/28eed7b1-5a0e-41a0-8aa7-d990ea16acc8)</p>
 
-
-# 🟢 Usage
+# ✨ Usage
 Either build it yourself or go to [releases](https://github.com/imAETHER/PCStats/releases) and download it.
 
 This project uses OSHI to get processor temperatures, OSHI uses [OpenHardwareMonitor](https://openhardwaremonitor.org/) to get these, download and run it in the background while you use the RPC to get accurate readings.<br>
 
-- Place the jar in a folder
-- Open CMD/Windows Terminal(looks better) and execute the jar with the command:
-`java -jar PCStats.jar`
-- It will automatically create config.json in the current directory and will ask you which gpu you want to use **(for the display name only)**
-- Will auto save the config when you close the program by doing CTRL + C
-- You can manually edit the config to change selected gpu, show uptime and change the RPC images/gifs
+- Make a folder and place the jar in there
+- Open the jar (with java 8 or above)
+- It will automatically create `config.json` in the current directory and will open the GUI!
+- You can now edit the RPC as you wish
+  - Once the RPC is running you can click the close button to minimize it to tray, click the tray icon to bring PCStats back up.
+  - To close it click "Stop RPC" and then you can close it normally.
+- Configs are automatically saved on exit
 
 # 💻 Supported platforms
 All platforms since its java & its using OSHI (haven't tested tho), for now GPU usage and temperature **only works with NVIDIA gpus that have nvidia-smi**.
