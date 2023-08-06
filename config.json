@@ -1,7 +1,9 @@
 {
   "appId": "995501904685715476",
-  "smallImage": "https://aetherclient.com/images/gato.png",
+  "smallImage": "https://avatars.githubusercontent.com/u/36291026?v\u003d4",
   "largeImage": "https://c.tenor.com/hEwfEcj2R60AAAAd/laptop-smoking.gif",
+  "topText": "...",
+  "bottomText": "HAI HELLO!!",
   "showPCActiveTime": false,
-  "gpuId": 0
+  "displayGpu": "NVIDIA GeForce RTX 3080"
 }

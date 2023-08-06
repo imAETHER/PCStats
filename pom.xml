@@ -66,6 +66,11 @@
             <artifactId>discord-game-sdk4j</artifactId>
             <version>0.5.5</version>
         </dependency>
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.1.1</version>
+        </dependency>
     </dependencies>
 
 </project>

@@ -1,5 +1,6 @@
 package im.aether;
 
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import de.jcm.discordgamesdk.Core;
@@ -7,11 +8,13 @@ import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GraphicsCard;
 import oshi.hardware.Sensors;
-import oshi.util.FileUtil;
 import oshi.util.GlobalConfig;
 import oshi.util.tuples.Pair;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
-import java.util.Scanner;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -32,6 +35,10 @@ public class Main {
     public static final SystemInfo SYSTEM_INFO = new SystemInfo();
 
     public static void main(String[] args) throws Exception {
+        FlatMacDarkLaf.setup();
+        UIManager.put("TabbedPane.showTabSeparators", true);
+        final GUI UI = new GUI();
+
         Logger.getGlobal().info("Checking for config file...");
 
         final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -58,6 +65,12 @@ public class Main {
             return;
         }
 
+        UI.getAppIdField().setText(config.getAppId());
+        UI.getBigImageField().setText(config.getLargeImage());
+        UI.getSmallImageField().setText(config.getSmallImage());
+        UI.getTopCustomText().setText(config.getTopText());
+        UI.getBottomCustomText().setText(config.getBottomText());
+
         Logger.getGlobal().info("Downloading RPC lib...");
 
         // temp(libs) and tempDir(lib directory), this is so Core doesn't create more temp dirs and just uses the given one
@@ -73,26 +86,31 @@ public class Main {
                 process -> process.getName().equalsIgnoreCase("openhardwaremonitor")
         );
         if (!runningOhm) {
+            UI.getOhmStatusLabel().setForeground(new Color(241, 38, 40));
+            UI.getOhmStatusLabel().setText("OHM Status: NOT RUNNING");
             Logger.getGlobal().warning("OpenHardwareMonitor isn't running, please run it & restart me");
             Logger.getGlobal().warning("or you may get inaccurate readings. You can also try running me as admin.");
+        } else {
+            UI.getOhmStatusLabel().setForeground(new Color(35, 165, 90));
+            UI.getOhmStatusLabel().setText("OHM Status: RUNNING");
         }
 
         final List<GraphicsCard> gpus = SYSTEM_INFO.getHardware().getGraphicsCards();
-        if (gpus.size() > 0) {
-            if (config.gpuId == -1) {
-                Logger.getGlobal().info("<!> Multiple GPUs detected, select one <!>");
-                for (int i = 0; i < gpus.size(); i++) {
-                    Logger.getGlobal().info(String.format("[%s] %s", i, gpus.get(i).getName()));
-                }
-                System.out.print("[GPU]> ");
-                config.gpuId = new Scanner(System.in).nextInt();
 
-                Logger.getGlobal().info("Selected GPU n°" + config.gpuId + ". To change this edit the config.");
+        // I doubt people wont have gpus but yk
+        if (!gpus.isEmpty()) {
+            for (GraphicsCard graphicsCard : gpus) {
+                UI.getActiveGpus().addItem(graphicsCard.getName());
             }
-        } else config.gpuId = 0;
 
-        DiscordRPC.initActivity(config.appId, config.showPCActiveTime);
-        DiscordRPC.updateImages(config.largeImage, config.smallImage);
+            if (gpus.size() > 1) {
+                UI.getActiveGpus().addItemListener(g -> {
+                    config.setDisplayGpu((String) g.getItem());
+                });
+            } else {
+                config.setDisplayGpu(gpus.get(0).getName());
+            }
+        }
 
         // This is for giving cpu usage readings closer to Task manager's
         GlobalConfig.set(GlobalConfig.OSHI_OS_WINDOWS_CPU_UTILITY, true);
@@ -102,25 +120,84 @@ public class Main {
         final long[] cpuPrevTicks = processor.getSystemCpuLoadTicks();
 
         final Timer s = new Timer(1000, (e) -> {
+            if (UI.getTopTextOpt().getSelectedItem() == null || UI.getBottomTextOpt().getSelectedItem() == null) return;
+
             int cpuTemp = (int) Math.round(sensors.getCpuTemperature());
             int cpuUsage = (int) Math.round(processor.getSystemCpuLoadBetweenTicks(cpuPrevTicks) * 100);
 
             final Pair<String, String> gpuInfoNvidia = getGPUInfoNvidia();
 
+            final String cpuStats = "CPU Usage: " + cpuUsage + " % | Temp: " + cpuTemp + "°C";
+            final String gpuStats = "GPU Usage: " + gpuInfoNvidia.getA() + " | Temp: " + gpuInfoNvidia.getB() + "°C";
+
+            String topInfo = null;
+            switch ((RTextOptions) UI.getTopTextOpt().getSelectedItem()) {
+                case Custom:
+                    topInfo = UI.getTopCustomText().getText();
+                    break;
+                case CPUStats:
+                    topInfo = cpuStats;
+                    break;
+                case GPUStats:
+                    topInfo = gpuStats;
+                    break;
+            }
+
+            String bottomInfo = null;
+            switch ((RTextOptions) UI.getBottomTextOpt().getSelectedItem()) {
+                case Custom:
+                    bottomInfo = UI.getBottomCustomText().getText();
+                    break;
+                case CPUStats:
+                    bottomInfo = cpuStats;
+                    break;
+                case GPUStats:
+                    bottomInfo = gpuStats;
+                    break;
+            }
+
+            DiscordRPC.updateImages(UI.getBigImageField().getText(), UI.getSmallImageField().getText());
             DiscordRPC.update(
-                    "CPU Usage: " + cpuUsage + " % | Temp: " + cpuTemp + "°C",
-                    "GPU Usage: " + gpuInfoNvidia.getA() + " | Temp: " + gpuInfoNvidia.getB() + "°C",
-                    gpus.get(config.gpuId).getName(), //gpu name
+                    topInfo,
+                    bottomInfo,
+                    config.getDisplayGpu(),
                     processor.getProcessorIdentifier().getName() //cpu name
             );
 
             // Update the previous ticks
             System.arraycopy(processor.getSystemCpuLoadTicks(), 0, cpuPrevTicks, 0, cpuPrevTicks.length);
         });
-        s.start();
+
+        UI.getToggleButton().addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+
+                if (UI.getToggleButton().getText().contains("Start")) {
+                    DiscordRPC.initActivity(config.getAppId(), config.isShowPCActiveTime());
+                    DiscordRPC.updateImages(config.getLargeImage(), config.getSmallImage());
+                    s.start();
+
+                    UI.getToggleButton().setText("Stop RPC");
+                } else {
+                    s.stop();
+                    DiscordRPC.dispose();
+                    UI.getToggleButton().setText("Start RPC");
+                }
+            }
+        });
+
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            // Save config
+            Logger.getGlobal().info("Saving config...");
+
+            // Theres probably a better way to do all of this, if so please tell me!
+            config.setAppId(UI.getAppIdField().getText());
+            config.setTopText(UI.getTopCustomText().getText());
+            config.setBottomText(UI.getBottomCustomText().getText());
+            config.setLargeImage(UI.getBigImageField().getText());
+            config.setSmallImage(UI.getSmallImageField().getText());
+
             final String serialized = gson.toJson(config);
             try {
                 Files.write(CONFIG.toPath(), serialized.getBytes(StandardCharsets.UTF_8), StandardOpenOption.TRUNCATE_EXISTING);
@@ -133,7 +210,7 @@ public class Main {
             DiscordRPC.dispose();
         }));
 
-        Logger.getGlobal().info("You can press CTRL+C to exit.");
+        UI.getToggleButton().setEnabled(true);
     }
 
     /**
