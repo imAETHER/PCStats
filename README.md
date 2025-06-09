@@ -1,4 +1,4 @@
-# <p align="center">Discord RPC Stats<br>![image](https://github.com/imAETHER/PCStats/assets/36291026/2563e075-1381-493f-88c0-f205f82bb564)</p>
+# <p align="center">Discord RPC Stats<br>![image](https://github.com/user-attachments/assets/0fd3608c-d986-4f99-b410-e3466d28c934)</p>
 
 # ✨ Usage
 Either build it yourself or go to [releases](https://github.com/imAETHER/PCStats/releases) and download it.
